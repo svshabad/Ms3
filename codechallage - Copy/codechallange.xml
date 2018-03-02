@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<mule xmlns:dw="http://www.mulesoft.org/schema/mule/ee/dw" xmlns:metadata="http://www.mulesoft.org/schema/mule/metadata" xmlns:http="http://www.mulesoft.org/schema/mule/http" xmlns:tracking="http://www.mulesoft.org/schema/mule/ee/tracking" xmlns="http://www.mulesoft.org/schema/mule/core" xmlns:doc="http://www.mulesoft.org/schema/mule/documentation"
+	xmlns:spring="http://www.springframework.org/schema/beans" 
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans-current.xsd
+http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
+http://www.mulesoft.org/schema/mule/http http://www.mulesoft.org/schema/mule/http/current/mule-http.xsd
+http://www.mulesoft.org/schema/mule/ee/dw http://www.mulesoft.org/schema/mule/ee/dw/current/dw.xsd
+http://www.mulesoft.org/schema/mule/ee/tracking http://www.mulesoft.org/schema/mule/ee/tracking/current/mule-tracking-ee.xsd">
+    <http:listener-config name="HTTP_Listener_Configuration" host="0.0.0.0" port="8081" doc:name="HTTP Listener Configuration"/>
+    <flow name="codechallangeFlow">
+        <http:listener config-ref="HTTP_Listener_Configuration" path="/convert" doc:name="HTTP"/>
+        <choice doc:name="Choice">
+            <when expression="message.inboundProperties.'http.query.params'.fNumber &lt; 1 || message.inboundProperties.'http.query.params'.sNumber &lt;1 || message.inboundProperties.'http.query.params'.fNumber &gt; 200 || message.inboundProperties.'http.query.params'.sNumber &gt; 200">
+                <logger message="The input range has a limit from a minimum of 1 to a maximum of 200. Use in between these values" level="INFO" doc:name="Logger"/>
+                <dw:transform-message doc:name="Transform Message">
+                    <dw:set-payload><![CDATA[%dw 1.0
+%output application/json
+---
+{
+	status : "Failed",
+	message : "input range has a limit from a minimum of 1 to a maximum of 200. Use in between these values" 
+}]]></dw:set-payload>
+                </dw:transform-message>
+            </when>
+            <otherwise>
+                <dw:transform-message doc:name="Transform Message" metadata:id="05f87214-859e-45c6-8e17-d66b2a036c2e">
+                    <dw:input-inbound-property mimeType="application/java" propertyName="http.query.string"/>
+                    <dw:input-inbound-property doc:sample="sample_data\integer.dwl" mimeType="application/java" propertyName="http.query.params"/>
+                    <dw:set-payload><![CDATA[%dw 1.0
+%output application/json
+---
+{
+	Fisrtnumber: (inboundProperties."http.query.params".fNumber as :string replace "3" with "ME") as :string replace "7" with "MS3",
+	Secondnumber: (inboundProperties."http.query.params".sNumber as :string replace "3" with "MS3")  as :string replace "7" with "MS3"
+}]]></dw:set-payload>
+                </dw:transform-message>
+            </otherwise>
+        </choice>
+    </flow>
+</mule>
